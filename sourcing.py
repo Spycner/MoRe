@@ -3,6 +3,10 @@ from bs4 import BeautifulSoup
 from tqdm import tqdm
 
 def scrape_reports():
+    """
+    set base_page_num and base_url if it changes
+    the function will scrape all the reports from the website, starting from the specified page
+    """
     base_page_num = 0
     base_url = 'https://www.bundesbank.de/action/de/885712/bbksearch?pageNumString='
     

@@ -42,7 +42,7 @@ def scrape_reports():
             en_file_name = en_download_link.split("/")[-1]
 
             # save the report in ./data/
-            with open(f"./data/{en_file_name}", "wb") as f:
+            with open(f"./data/english/{en_file_name}", "wb") as f:
                 f.write(en_report_download.content)
 
             """
@@ -63,7 +63,7 @@ def scrape_reports():
             de_file_name = de_download_link.split("/")[-1]
 
             # save the report in ./data/
-            with open(f"./data/{de_file_name}", "wb") as f:
+            with open(f"./data/german/{de_file_name}", "wb") as f:
                 f.write(de_report_download.content)
 
         base_page_num += 1

@@ -5,10 +5,14 @@ from pdfminer.layout import LAParams
 from pdfminer.pdfpage import PDFPage
 from io import StringIO
 import os
+import tqdm
+import multiprocessing
 
 
 def extract_text_from_pypdf2(file_path):
-    """Extract text from pdf file using pypdf2"""
+    """
+    Extract text from pdf using PyPDF2 library going page by page adding a new line at the end of each page
+    """
     with open(file_path, "rb") as f:
         pdf_reader = PyPDF2.PdfReader(f)
 
@@ -16,11 +20,7 @@ def extract_text_from_pypdf2(file_path):
 
         for page_num in range(len(pdf_reader.pages)):
             page = pdf_reader.pages[page_num]
-            text += page.extract_text()
-
-        # write into temp file
-        """ with open("temp.txt", "w", encoding="utf-8") as f:
-            f.write(text) """
+            text += page.extract_text() + "\n" + "\n"
         return text
 
 
@@ -51,18 +51,45 @@ def check_image_based_pdf(file_path):
             return False
 
 
+def parse_quarterly_reports(file_name):
+    os.makedirs("data/german_text/quarterly_reports", exist_ok=True)
+    month_sequence = ["-02-", "-05-", "-08-", "-11-"]
+    for seq in month_sequence:
+        if seq in file_name:
+            file_path = os.path.join("data/german", file_name)
+            text = extract_text_from_pypdf2(file_path)
+            with open(
+                os.path.join(
+                    "data/german_text/quarterly_reports",
+                    file_name.replace(".pdf", ".txt"),
+                ),
+                "w",
+                encoding="utf-8",
+            ) as f:
+                f.write(text)
+            # jump out of inner for-loop since we found matching month for file
+            break
+
+
 if __name__ == "__main__":
     # check all pdfs in data folder if they are image based
-    for file_name in os.listdir("data"):
-        if file_name.endswith(".pdf"):
-            file_path = os.path.join("data", file_name)
-            if check_image_based_pdf(file_path):
-                os.makedirs("data/image_based", exist_ok=True)
-                os.rename(file_path, os.path.join("data/image_based", file_name))
-                print(f"Moved {file_name} to image_based")
+    """for file_name in os.listdir("data/english"):
+    if file_name.endswith(".pdf"):
+        file_path = os.path.join("data/english", file_name)
+        if check_image_based_pdf(file_path):
+            os.makedirs("data/image_based", exist_ok=True)
+            os.rename(file_path, os.path.join("data/image_based", file_name))
+            print(f"Moved {file_name} to image_based")"""
+    """for file_name in os.listdir("data/german"):
+    if file_name.endswith(".pdf"):
+        file_path = os.path.join("data/german", file_name)
+        if check_image_based_pdf(file_path):
+            os.makedirs("data/image_based", exist_ok=True)
+            os.rename(file_path, os.path.join("data/image_based", file_name))
+            print(f"Moved {file_name} to image_based")"""
 
-    file_name = "1949-01-monthly-report-data.pdf"
-    file_path = os.path.join("data", file_name)
+    file_name = "2022-11-monatsbericht-data.pdf"
+    file_path = os.path.join("data\german", file_name)
 
     # check if pdf is image based and move file to data/image_based if it is, create a folder named image_based if it doesn't exist
     if check_image_based_pdf(file_path):
@@ -71,10 +98,13 @@ if __name__ == "__main__":
         print(f"Moved {file_name} to image_based")
         exit()
 
-    pypdf2_text = extract_text_from_pypdf2(file_path)
-    with open("tmp/temp_pydf2.txt", "w", encoding="utf-8") as f:
-        f.write(pypdf2_text)
-
-    pdfminer_text = extract_tables_from_pdfminer(file_path)
-    with open("tmp/temp_pdfminer.txt", "w", encoding="utf-8") as f:
-        f.write(pdfminer_text)
+    # use multiprocessing to speed up process and track progress with tqdm
+    files = os.listdir("data/german")
+    num_cores = multiprocessing.cpu_count() // 2
+    file_chunks = [files[i::num_cores] for i in range(num_cores)]
+    pool = multiprocessing.Pool(num_cores)
+    with tqdm.tqdm(total=len(files)) as pbar:
+        for i, _ in enumerate(pool.imap_unordered(parse_quarterly_reports, files)):
+            pbar.update()
+    pool.close()
+    pool.join()

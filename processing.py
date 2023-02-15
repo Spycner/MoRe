@@ -71,6 +71,44 @@ def parse_quarterly_reports(file_name):
             break
 
 
+def parse_quarterly_tax_reports():
+    # releveant files are in data/german_text/quarterly_reports
+    # store parsed data in data/german_text/quarterly_reports/tax_reports
+    # relevent text starts with a line containing only "Steuereinnahmen" -> parse only if such a line is found
+    os.makedirs("data/german_text/quarterly_reports/tax_reports", exist_ok=True)
+    for file_name in os.listdir("data/german_text/quarterly_reports"):
+        if file_name.endswith(".txt"):
+            file_path = os.path.join("data/german_text/quarterly_reports", file_name)
+            with open(file_path, "r", encoding="utf-8") as f:
+                # read file line by line until line containing "Steuereinnahmen" is found
+                lines = f.readlines()
+                start = False
+                start_index = 0
+                end = False
+                end_index = len(lines)
+                for i, line in enumerate(lines):
+                    if line.strip() == "Steuereinnahmen" and not start:
+                        start = True
+                        start_index = i
+                    elif line.strip() == "Bundeshaushalt" and start:
+                        end = True
+                        end_index = i
+                if start:
+                    if not end:
+                        lines_to_write = lines[start_index:]
+                    if end:
+                        lines_to_write = lines[start_index:end_index]
+                    with open(
+                        os.path.join(
+                            "data/german_text/quarterly_reports/tax_reports",
+                            file_name,
+                        ),
+                        "w",
+                        encoding="utf-8",
+                    ) as f:
+                        f.writelines(lines_to_write)
+
+
 if __name__ == "__main__":
     # check all pdfs in data folder if they are image based
     """for file_name in os.listdir("data/english"):
@@ -99,12 +137,14 @@ if __name__ == "__main__":
         exit()
 
     # use multiprocessing to speed up process and track progress with tqdm
-    files = os.listdir("data/german")
-    num_cores = multiprocessing.cpu_count() // 2
-    file_chunks = [files[i::num_cores] for i in range(num_cores)]
-    pool = multiprocessing.Pool(num_cores)
-    with tqdm.tqdm(total=len(files)) as pbar:
-        for i, _ in enumerate(pool.imap_unordered(parse_quarterly_reports, files)):
-            pbar.update()
-    pool.close()
-    pool.join()
+    # files = os.listdir("data/german")
+    # num_cores = multiprocessing.cpu_count() // 2
+    # file_chunks = [files[i::num_cores] for i in range(num_cores)]
+    # pool = multiprocessing.Pool(num_cores)
+    # with tqdm.tqdm(total=len(files)) as pbar:
+    #     for i, _ in enumerate(pool.imap_unordered(parse_quarterly_reports, files)):
+    #         pbar.update()
+    # pool.close()
+    # pool.join()
+
+    parse_quarterly_tax_reports()

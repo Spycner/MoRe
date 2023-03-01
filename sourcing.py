@@ -23,6 +23,9 @@ def scrape_reports():
         if soup.find("div", class_="no-results"):
             break
 
+        if len(response.content) == 0:
+            print(f"No content found on {base_url}{base_page_num}, stopping.")
+            break
         # extract links to the monthly reports, we will get the english ones
         en_report_links = soup.find_all("a", class_="metadata__lang")
 

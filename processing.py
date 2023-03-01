@@ -7,6 +7,7 @@ from io import StringIO
 import os
 import tqdm
 import multiprocessing
+import shutil
 
 
 def extract_text_from_pypdf2(file_path):
@@ -107,6 +108,26 @@ def parse_quarterly_tax_reports():
                         encoding="utf-8",
                     ) as f:
                         f.writelines(lines_to_write)
+
+
+def copy_pdfs(dir_path):
+    dest_dir = "data/german/quaterly_reports"
+    os.makedirs(dest_dir, exist_ok=True)
+    os.makedirs("parsed_data", exist_ok=True)
+    for filename in os.listdir(dir_path):
+        if filename.endswith(".pdf"):
+            file_path = os.path.join(dir_path, filename)
+            date_str = filename[:8]
+            year = int(date_str[:4])
+            month = int(date_str[5:7])
+
+            if year >= 2006 and (month == 2 or month == 5 or month == 8 or month == 11):
+                dest_path = os.path.join(dest_dir, filename)
+                shutil.copyfile(file_path, dest_path)
+
+                txt_name = filename.replace(".pdf", ".txt")
+                txt_path = os.path.join("parsed_data", txt_name)
+                open(txt_path, "w").close()
 
 
 if __name__ == "__main__":
